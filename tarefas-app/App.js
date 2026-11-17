@@ -10,11 +10,11 @@ import {
 } from 'react-native';
 
 export default function App() {
-  // Estados para armazenar o texto da nova tarefa e a lista de tarefas
   const [novaTarefa, setNovaTarefa] = useState('');
+  const [filtro, setFiltro] = useState('todas'); // 'todas', 'pendentes', 'concluidas'
   const [tarefas, setTarefas] = useState([
-    { id: '1', texto: 'Criar wireframe no Figma', concluida: false },
-    { id: '2', texto: 'Modelar banco de dados', concluida: false },
+    { id: '1', texto: 'Criar wireframe no Figma', concluida: false, prioridade: 'alta' },
+    { id: '2', texto: 'Modelar banco de dados', concluida: false, prioridade: 'normal' },
   ]);
 
   // Função para adicionar uma nova tarefa à lista
@@ -25,6 +25,7 @@ export default function App() {
       id: Date.now().toString(),
       texto: novaTarefa,
       concluida: false,
+      prioridade: 'alta', // Define 'alta' para teste ou 'normal'
     };
 
     setTarefas([...tarefas, item]);
@@ -33,14 +34,18 @@ export default function App() {
 
   // Função para alternar o status de concluído da tarefa
   const alternarConcluida = (id) => {
-    const tarefasAtualizadas = tarefas.map((t) => {
-      if (t.id === id) {
-        return { ...t, concluida: !t.concluida };
-      }
-      return t;
-    });
+    const tarefasAtualizadas = tarefas.map((t) =>
+      t.id === id ? { ...t, concluida: !t.concluida } : t
+    );
     setTarefas(tarefasAtualizadas);
   };
+
+  // Função para filtrar as tarefas dinamicamente antes de exibir na FlatList
+  const tarefasFiltradas = tarefas.filter((t) => {
+    if (filtro === 'pendentes') return !t.concluida;
+    if (filtro === 'concluidas') return t.concluida;
+    return true;
+  });
 
   // Função para remover uma tarefa da lista
   const removerTarefa = (id) => {
@@ -50,13 +55,10 @@ export default function App() {
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.titulo}>🚀 Gestor de Tarefas Escolar</Text>
-      <Text style={styles.subtitulo}>
-        Acompanhe suas entregas de software
-      </Text>
+      <Text style={styles.subtitulo}>Acompanhe suas entregas de software</Text>
+
       {/* Contador de Tarefas Cadastradas */}
-       <Text style={styles.contador}>
-       📋 Total de tarefas: {tarefas.length}
-      </Text>
+      <Text style={styles.contador}>📋 Total de tarefas: {tarefas.length}</Text>
 
       {/* Área de entrada de dados */}
       <View style={styles.inputContainer}>
@@ -66,17 +68,53 @@ export default function App() {
           value={novaTarefa}
           onChangeText={setNovaTarefa}
         />
+
         <TouchableOpacity style={styles.botaoAdicionar} onPress={adicionarTarefa}>
           <Text style={styles.textoBotao}>+</Text>
         </TouchableOpacity>
       </View>
 
+      {/* Botões de Filtro (movidos para fora do inputContainer) */}
+      <View style={styles.filtroContainer}>
+        <TouchableOpacity
+          style={[styles.botaoFiltro, filtro === 'todas' && styles.filtroAtivo]}
+          onPress={() => setFiltro('todas')}
+        >
+          <Text style={[styles.textoFiltro, filtro === 'todas' && styles.textoFiltroAtivo]}>
+            Todas
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.botaoFiltro, filtro === 'pendentes' && styles.filtroAtivo]}
+          onPress={() => setFiltro('pendentes')}
+        >
+          <Text style={[styles.textoFiltro, filtro === 'pendentes' && styles.textoFiltroAtivo]}>
+            Pendentes
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.botaoFiltro, filtro === 'concluidas' && styles.filtroAtivo]}
+          onPress={() => setFiltro('concluidas')}
+        >
+          <Text style={[styles.textoFiltro, filtro === 'concluidas' && styles.textoFiltroAtivo]}>
+            Concluídas
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Lista de tarefas */}
       <FlatList
-        data={tarefas}
+        data={tarefasFiltradas}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={styles.cardTarefa}>
+          <View
+            style={[
+              styles.cardTarefa,
+              { borderLeftColor: item.prioridade === 'alta' ? '#EF4444' : '#2563EB' },
+            ]}
+          >
             <TouchableOpacity
               style={{ flex: 1 }}
               onPress={() => alternarConcluida(item.id)}
@@ -102,7 +140,6 @@ export default function App() {
   );
 }
 
-// Estilização do Aplicativo (CSS-in-JS)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -120,11 +157,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#64748B',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 15,
+  },
+  contador: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#2563EB',
+    textAlign: 'center',
+    marginBottom: 15,
   },
   inputContainer: {
     flexDirection: 'row',
-    marginBottom: 20,
+    marginBottom: 15,
   },
   input: {
     flex: 1,
@@ -149,6 +193,28 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
   },
+  filtroContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 15,
+  },
+  botaoFiltro: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: '#E2E8F0',
+  },
+  filtroAtivo: {
+    backgroundColor: '#2563EB',
+  },
+  textoFiltro: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#64748B',
+  },
+  textoFiltroAtivo: {
+    color: '#FFFFFF',
+  },
   cardTarefa: {
     backgroundColor: '#9370DB',
     padding: 15,
@@ -157,27 +223,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 10,
-    borderLeftWidth: 4,
-    borderLeftColor: '#4B0082',
+    borderLeftWidth: 6,
   },
   textoTarefa: {
     fontSize: 16,
-    color: '#334155',
+    color: '#FFFFFF',
+    fontWeight: '500',
   },
   textoConcluido: {
     textDecorationLine: 'line-through',
-    color: '#94A3B8',
+    color: '#E2E8F0',
   },
   textoRemover: {
     fontSize: 18,
     paddingLeft: 10,
   },
-  contador: {
-  fontSize: 15,
-  fontWeight: 'bold',
-  color: '#2563EB', // Você pode alterar para a cor da sua preferência
-  textAlign: 'center',
-  marginBottom: 15,
-},
-
 });
